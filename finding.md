@@ -75,10 +75,10 @@ No `app.use` auth guard exists; `router` is mounted directly (`app.use(mount(`${
 - **Non-duplicate, unpatched at HEAD.**
 
 ## Remediation
-- Require authentication on all `/_api/*` routes.
 - Resolve the requested path and verify it stays within `TASKS_DIR`
   (e.g. `path.resolve(TASKS_DIR, subPath)` must start with `path.resolve(TASKS_DIR)+sep`);
-  reject `..`. Drop privileges (run as non-root).
+  reject `..` and absolute paths.
+- Run the container as a non-root user.
 
 ## Reproduce
 ```
